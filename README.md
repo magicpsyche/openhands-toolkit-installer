@@ -39,7 +39,7 @@ claude auth login
 
 国内后端节点可配置 Xray 透明分流；国外节点可跳过。原生 Codex 不安装快捷函数、不需要代理变量。下载使用当前用户主目录的随机临时文件，避免 `/tmp` 同名文件权限冲突；下载完整文件后运行，不使用 `curl | bash`。
 
-安装包内置完整已提交源码，不包含节点 URI、登录文件或密钥。主项目继续保持私有；上游许可证随源码保留。源码版本：`cd895f8d55f32313ebb6542e4104c6c5bfda8dfd`。
+安装包内置完整已提交源码，不包含节点 URI、登录文件或密钥。主项目继续保持私有；上游许可证随源码保留。源码版本：`f6416ac8c57c56948696e66cb173523c95ff5d0d`。
 
 校验：将 `install.sh` 与 `install.sh.sha256` 保存到同一目录，运行 `sha256sum -c install.sh.sha256`。
 
@@ -48,3 +48,18 @@ claude auth login
 仅更新部署脚本和菜单：`openhands toolkit-update`，或安装更新子菜单第 5 项。此项备份并替换工具包，不安装依赖或重启服务。`openhands update` 仍为完整部署更新。
 
 修复：已有节点在 Agent Server 停止时更新，可校验并使用保存的受管 Python 环境，不再依赖先运行服务。
+
+## 控制端来源白名单（CORS）
+
+每台后端独立允许控制端网页来源。此前 `http://localhost:8000` 可以直接使用，是因为后端默认允许 localhost；改成 `http://wsl` 后需要明确配置。来源包含协议、主机名和非默认端口，与访问设备的 IP 无关。
+
+新后端安装向导会询问控制端访问地址，填写例如 `http://wsl`；留空仅保留默认 localhost 访问。自动化可使用 `--server --frontend-origin http://wsl`，多个来源可重复传入该参数。
+
+已有后端在 root 终端打开“连接与登录 → 允许的控制端来源”，或运行：
+
+```bash
+openhands cors-add http://wsl
+openhands restart
+```
+
+配置只追加明确来源，不使用 `*` 放开所有网站。更新保留已有白名单、API Key 和原生认证，并在私有配置目录备份原环境文件。`http://wsl:80` 会规范化为浏览器发送的 `http://wsl`。
