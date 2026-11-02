@@ -34,7 +34,7 @@ openhands connection
 
 菜单分为安装更新、服务管理、网络分流、Canvas 修复、连接与登录。旧版本已经打开的终端如仍有 Codex 函数，执行一次 `unset -f codex`，或重新登录 SSH。
 
-安装包内置完整项目源码，不包含节点 URI、登录文件或密钥。主项目仓库继续私有。源码版本：`0e33ca0e676b420ce77648d99cac35d3133508cf`。上游许可证随源码保留。下载完整文件后运行，不使用 `curl | bash`，以保留向导输入。
+安装包内置完整项目源码，不包含节点 URI、登录文件或密钥。主项目仓库继续私有。源码版本：`d43037055b3a48c17f629d426f50cdc683385eb4`。上游许可证随源码保留。下载完整文件后运行，不使用 `curl | bash`，以保留向导输入。
 
 已有程序目录可带参数重跑；首次非交互安装时，把这些参数加在下载命令的 `bash "$installer"` 后：
 
@@ -62,3 +62,7 @@ openhands connection
 程序目录为 `~/.local/share/agent-node/toolkit`，服务为 `~/.config/systemd/user/agent-canvas.service`；仅安装控制端前端及 UI 修复，不安装 Agent CLI 或配置后端。前端监听 `0.0.0.0:8000`，浏览器填写已有 VPS Backend 地址和 API Key。WSL 内完成 Tailscale 登录后，可用 `http://WSL的Tailscale-IP:8000` 访问，Windows 和 WSL 需保持运行。
 
 重新执行同一条命令可以覆盖更新：旧程序目录会备份，用户配置和认证保留，控制端服务会重启。控制端需要 Linux、systemd 用户会话和 sudo 权限；不提供 Windows 原生控制端安装。
+
+规则集每日北京时间 04:30 由 Xray 自动下载并热重载。
+
+仅更新部署脚本和菜单：`openhands toolkit-update`，或安装更新子菜单第 5 项。此项备份并替换工具包，不安装依赖或重启服务。`openhands update` 仍为完整部署更新。
