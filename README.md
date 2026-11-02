@@ -34,7 +34,7 @@ openhands connection
 
 菜单分为安装更新、服务管理、网络分流、Canvas 修复、连接与登录。旧版本已经打开的终端如仍有 Codex 函数，执行一次 `unset -f codex`，或重新登录 SSH。
 
-安装包内置完整项目源码，不包含节点 URI、登录文件或密钥。主项目仓库继续私有。源码版本：`92092646a18e8cd45515b74a6da56270f83d30c4`。上游许可证随源码保留。下载完整文件后运行，不使用 `curl | bash`，以保留向导输入。
+安装包内置完整项目源码，不包含节点 URI、登录文件或密钥。主项目仓库继续私有。源码版本：`59ee4d3a5894ab6870e72bc57b895717e4bfee57`。上游许可证随源码保留。下载完整文件后运行，不使用 `curl | bash`，以保留向导输入。
 
 已有程序目录可带参数重跑；首次非交互安装时，把这些参数加在下载命令的 `bash "$installer"` 后：
 
@@ -44,3 +44,21 @@ openhands connection
 ```
 
 校验：将 `install.sh` 与 `install.sh.sha256` 保存到同一目录，运行 `sha256sum -c install.sh.sha256`。
+
+## Linux 控制端（Ubuntu/Debian，含 WSL）
+
+在普通用户终端执行；系统依赖会通过 sudo 安装，不要用 root 启动整个控制端安装：
+
+```bash
+(
+  installer=$(mktemp "$HOME/openhands-install.XXXXXX.sh") || exit
+  trap 'rm -f "$installer"' EXIT
+  curl -fL --retry 2 https://raw.githubusercontent.com/magicpsyche/openhands-toolkit-installer/main/install.sh -o "$installer" && bash "$installer" --control --tailscale
+)
+```
+
+暂不加入 Tailscale 时使用 `--control --no-tailscale`。安装完成后可用 `~/.local/bin/openhands` 管理控制端；重新登录后通常可直接输入 `openhands`。`openhands connection` 显示访问地址，`openhands update` 更新控制端。
+
+程序目录为 `~/.local/share/agent-node/toolkit`，服务为 `~/.config/systemd/user/agent-canvas.service`；仅安装控制端前端及 UI 修复，不安装 Agent CLI 或配置后端。前端监听 `0.0.0.0:8000`，浏览器填写已有 VPS Backend 地址和 API Key。WSL 内完成 Tailscale 登录后，可用 `http://WSL的Tailscale-IP:8000` 访问，Windows 和 WSL 需保持运行。
+
+重新执行同一条命令可以覆盖更新：旧程序目录会备份，用户配置和认证保留，控制端服务会重启。控制端需要 Linux、systemd 用户会话和 sudo 权限；不提供 Windows 原生控制端安装。
