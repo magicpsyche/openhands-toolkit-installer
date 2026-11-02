@@ -26,13 +26,15 @@ claude auth login
 完成后终端显示 Backend 地址和 API Key，也可从二级菜单或命令查看：
 
 ```bash
-/opt/agent-node/linux/agent-node.sh server
-/opt/agent-node/linux/agent-node.sh server connection
+openhands
+openhands connection
 ```
+
+安装后直接输入 `openhands` 打开管理菜单，`openhands status` 查看状态；重新登录 SSH 后仍可使用。若 `/usr/local/bin/openhands` 已被其他程序占用，会保留原命令，此时使用 `/opt/agent-node/linux/agent-node.sh server` 打开菜单。
 
 菜单分为安装更新、服务管理、网络分流、Canvas 修复、连接与登录。旧版本已经打开的终端如仍有 Codex 函数，执行一次 `unset -f codex`，或重新登录 SSH。
 
-安装包内置完整项目源码，不包含节点 URI、登录文件或密钥。主项目仓库继续私有。源码版本：`dc7eca626aa672e6597ba0df73ca301b244a2e45`。上游许可证随源码保留。下载完整文件后运行，不使用 `curl | bash`，以保留向导输入。
+安装包内置完整项目源码，不包含节点 URI、登录文件或密钥。主项目仓库继续私有。源码版本：`155e260e71d6e6911d7c9be5d22763287f94327b`。上游许可证随源码保留。下载完整文件后运行，不使用 `curl | bash`，以保留向导输入。
 
 已有程序目录可带参数重跑；首次非交互安装时，把这些参数加在下载命令的 `bash "$installer"` 后：
 
