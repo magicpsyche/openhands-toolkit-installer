@@ -1,33 +1,38 @@
-# OpenHands Toolkit 安装入口
+# OpenHands Toolkit 安装 / 更新
 
-新 Ubuntu/Debian VPS 在完整 root 登录终端执行，无需 GitHub 登录或提前 clone：
+在 Ubuntu/Debian VPS 的完整 root 登录终端执行，无需 GitHub 登录、clone 或传文件：
 
 ```bash
 curl -fL --retry 2 https://raw.githubusercontent.com/magicpsyche/openhands-toolkit-installer/main/install.sh -o /tmp/install-openhands.sh && bash /tmp/install-openhands.sh
 ```
 
-向导会询问是否配置 VLESS 分流、加入 Tailscale，以及登录 Codex/Claude，然后自动安装环境、Agent、工具链、Canvas 后端与兼容补丁，启动服务并检查就绪。账号授权由本人完成，节点 URI 隐藏输入。安装依赖需要联网。
+新节点安装和已有节点更新使用同一条命令。更新先备份旧程序目录，保留用户目录中的认证、API Key、会话和本机代理配置；完成后重启 Canvas。请在允许中断任务时更新。程序更新失败会恢复旧程序目录，系统包和 SDK 由对应模块处理。
 
-安装包内置完整项目源码，不含节点密钥、认证文件或 VLESS 节点。主项目仓库继续保持私有。源码版本：`04438dbdf666a2dc8d0b4eee9cb6b9d7ddeb1173`。上游补丁的 MIT 许可证随源码保留。
+国内节点可选择 Xray 透明分流，VLESS 由本人隐藏输入；国外节点可跳过 Xray。原生 Codex 不安装快捷函数、不需要代理变量。透明分流只处理本机 HTTP/HTTPS TCP，AI 域名走 VLESS，其余透明流量直连。
 
-先完整下载再执行，终端输入用于向导；不要通过 `curl | bash` 运行。首次安装解包到 `/opt/agent-node`，目标目录或 Canvas 服务已存在时拒绝覆盖。已有节点应使用模块更新。
-
-可选参数：
+订阅授权只显示说明，由你手动执行：
 
 ```bash
-bash /tmp/install-openhands.sh --proxy --tailscale --login codex
-bash /tmp/install-openhands.sh --no-proxy --no-tailscale --login none
+codex login
+claude auth login
 ```
 
-校验下载：
+完成后终端显示 Backend 地址和 API Key，也可从二级菜单或命令查看：
 
 ```bash
-mkdir -p /tmp/agent-node-download
-cd /tmp/agent-node-download
-curl -fLO https://raw.githubusercontent.com/magicpsyche/openhands-toolkit-installer/main/install.sh
-curl -fLO https://raw.githubusercontent.com/magicpsyche/openhands-toolkit-installer/main/install.sh.sha256
-sha256sum -c install.sh.sha256
-bash install.sh
+/opt/agent-node/linux/agent-node.sh server
+/opt/agent-node/linux/agent-node.sh server connection
 ```
 
-安装源码包不含 Git 历史；后续要执行 Git 同步更新，需要单独配置私有仓库访问权限和完整 clone。本仓库用于分发安装包。
+菜单分为安装更新、服务管理、网络分流、Canvas 修复、连接与登录。旧版本已经打开的终端如仍有 Codex 函数，执行一次 `unset -f codex`，或重新登录 SSH。
+
+安装包内置完整项目源码，不包含节点 URI、登录文件或密钥。主项目仓库继续私有。源码版本：`ed060b5cb958eef508675bb66dd0c032bf85b2b1`。上游许可证随源码保留。下载完整文件后运行，不使用 `curl | bash`，以保留向导输入。
+
+可选网络参数（新节点非交互时需明确指定）：
+
+```bash
+bash /tmp/install-openhands.sh --proxy --tailscale
+bash /tmp/install-openhands.sh --no-proxy --no-tailscale
+```
+
+校验：将 `install.sh` 与 `install.sh.sha256` 保存到同一目录，运行 `sha256sum -c install.sh.sha256`。
