@@ -39,7 +39,7 @@ claude auth login
 
 国内后端节点可配置 Xray 透明分流；国外节点可跳过。原生 Codex 不安装快捷函数、不需要代理变量。下载使用当前用户主目录的随机临时文件，避免 `/tmp` 同名文件权限冲突；下载完整文件后运行，不使用 `curl | bash`。
 
-安装包内置完整已提交源码，不包含节点 URI、登录文件或密钥。主项目继续保持私有；上游许可证随源码保留。源码版本：`601819dbc0e77fa9e252c46887050cfde7f9d245`。
+安装包内置完整已提交源码，不包含节点 URI、登录文件或密钥。主项目继续保持私有；上游许可证随源码保留。源码版本：`f4d23e8ce4a845932bc967a22392fa6cd850aab1`。
 
 校验：将 `install.sh` 与 `install.sh.sha256` 保存到同一目录，运行 `sha256sum -c install.sh.sha256`。
 
@@ -65,3 +65,5 @@ openhands restart
 配置只追加明确来源，不使用 `*` 放开所有网站。更新保留已有白名单、API Key 和原生认证，并在私有配置目录备份原环境文件。`http://wsl:80` 会规范化为浏览器发送的 `http://wsl`。
 
 修复控制端导入 auth.json 后 Codex 模型发现因强制刷新令牌失败而超时。仅更新工具包后运行 `openhands backend-apply`，再刷新控制端；完整部署更新会自动应用。
+
+修复远程 HTTP 后端右侧文件预览 Unauthorized：控制端通过鉴权头获取一小时有效的工作区文件地址，支持图片、PDF、HTML 与相对资源。完整部署更新自动应用两端修复。仅更新工具包的后端需要执行 `openhands backend-apply`，在会话空闲时执行 `openhands restart`；控制端需更新静态 UI 并刷新网页。
