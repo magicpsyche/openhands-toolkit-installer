@@ -26,8 +26,8 @@ Ubuntu/Debian（含 systemd WSL）使用同一个下载入口，无需 GitHub �
 
 已有节点再次运行同一条命令并选择相同角色即可更新。认证、密钥、会话及网络配置保留；完整更新会重启所选角色相关服务，网关切换静态版本并 reload Nginx。`--toolkit-only` 只替换部署工具包，不安装依赖、构建 UI 或重启服务。
 
-安装包内置已提交源码，保留上游许可证，不包含节点 URI、登录文件、后端密钥或私有网关配置。源码版本：`a8ed536497290876fe1b7ff344c16f54e5a9dd43`。
+安装包内置已提交源码，保留上游许可证，不包含节点 URI、登录文件、后端密钥或私有网关配置。源码版本：`d8ce3d76d6236bf80d67c0415fca3880a1c6117e`。
 
 校验：将 `install.sh` 与 `install.sh.sha256` 放在同一目录，运行 `sha256sum -c install.sh.sha256`。
 
-网关静态副本使用现有备用字体，避免 Google Fonts 外部样式阻塞国内页面；安装时等待首次 HTTPS 证书就绪。仅使用私人 Serve，不启用 Funnel 公网发布。
+网关静态副本使用现有备用字体，避免 Google Fonts 外部样式阻塞国内页面；安装时等待首次 HTTPS 证书就绪。默认使用私人 Serve，不启用 Funnel 公网发布。可选 `--domain op.example.com`：使用 Cloudflare DNS 验证签发正式证书、仅监听 Tailscale 地址，并通过 LocalAPI WhoIs 校验访问账号；原 Tailscale 长地址继续可用。证书每日自动检查续期。域名必须由你管理，DNS 专用 Token 以 0600 权限保存在 VPS，不能放入安装包。
