@@ -1,12 +1,15 @@
 param(
     [Parameter(Mandatory=$true)][string]$Gateway,
     [string]$Id = 'desktop',
-    [string]$Name = $env:COMPUTERNAME,
+    [string]$Name,
     [string]$CodexHome = $(if ($env:CODEX_HOME) { $env:CODEX_HOME } else { Join-Path $env:USERPROFILE '.codex' }),
     [string]$State = (Join-Path (Split-Path -Parent $CodexHome) '.agent-node-memory-device'),
     [string]$NodePath,
     [string]$TailscalePath,
-    [string]$SyncthingArchive
+    [string]$SyncthingArchive,
+    [string]$SkillsRoot,
+    [string]$PeerSkills,
+    [string]$PeerSkillsInstructions
 )
 $ErrorActionPreference = 'Stop'
 foreach ($extension in @('.COM','.EXE','.BAT','.CMD')) {
@@ -17,6 +20,11 @@ New-Item -ItemType Directory -Force $State | Out-Null
 # MSIX applications can redirect LocalAppData. Scheduled tasks need the real path.
 $physicalState = @((Get-Item -LiteralPath $State).Target) | Select-Object -First 1
 if ($physicalState) { $State = $physicalState }
+if (!$Name) {
+    $savedMetadata = Join-Path $State 'device.json'
+    if (Test-Path $savedMetadata) { $Name = (Get-Content $savedMetadata -Raw | ConvertFrom-Json).name }
+    if (!$Name) { $Name = $env:COMPUTERNAME }
+}
 $account = [Security.Principal.WindowsIdentity]::GetCurrent().Name
 # Only this user and SYSTEM may read the dedicated device certificate and API key.
 & icacls.exe $State /inheritance:r /grant:r "${account}:(OI)(CI)F" 'SYSTEM:(OI)(CI)F' | Out-Null
@@ -55,7 +63,15 @@ $setup = Join-Path $State 'setup.mjs'
 $bundled = Join-Path $PSScriptRoot '..\memory-device\setup.mjs'
 if (Test-Path $bundled) { Copy-Item $bundled $setup -Force }
 else { Invoke-WebRequest 'https://raw.githubusercontent.com/magicpsyche/openhands-toolkit-installer/main/setup-memory-device.mjs' -OutFile $setup -UseBasicParsing }
-& $NodePath $setup --gateway $Gateway --id $Id --name $Name --codex-home $CodexHome --state $State --syncthing $binary --tailscale $TailscalePath
+$skillModule = Join-Path $State 'skills.mjs'
+$bundledSkills = Join-Path $PSScriptRoot '..\memory-device\skills.mjs'
+if (Test-Path $bundledSkills) { Copy-Item $bundledSkills $skillModule -Force }
+else { Invoke-WebRequest 'https://raw.githubusercontent.com/magicpsyche/openhands-toolkit-installer/main/skills-device.mjs' -OutFile $skillModule -UseBasicParsing }
+$setupArgs = @($setup,'--gateway',$Gateway,'--id',$Id,'--name',$Name,'--codex-home',$CodexHome,'--state',$State,'--syncthing',$binary,'--tailscale',$TailscalePath)
+if ($SkillsRoot) { $setupArgs += @('--skills-root',$SkillsRoot) }
+if ($PeerSkills) { $setupArgs += @('--peer-skills',$PeerSkills) }
+if ($PeerSkillsInstructions) { $setupArgs += @('--peer-skills-instructions',$PeerSkillsInstructions) }
+& $NodePath @setupArgs
 if ($LASTEXITCODE -ne 0) { throw 'Memory device enrollment failed' }
 $runner = Join-Path $State 'Run-Syncthing.ps1'
 @'
@@ -82,4 +98,23 @@ if ($old.State -ne 'Running') {
     Start-Sleep -Seconds 2
     Start-ScheduledTask -TaskName 'AgentNode-CodexMemory'
 }
-Write-Host 'Memory device registered. Enable this source in the gateway memory device list.'
+# Refresh exported Skill files and peer authorization using the SAME Syncthing.
+$refreshConfig = @{node=$NodePath;setup=$setup;gateway=$Gateway;id=$Id;name=$Name;codex_home=$CodexHome;state=$State;syncthing=$binary;tailscale=$TailscalePath}
+$refreshConfig | ConvertTo-Json | Set-Content (Join-Path $State 'refresh.json') -Encoding UTF8
+$refreshRunner = Join-Path $State 'Refresh-Shares.ps1'
+@'
+$ErrorActionPreference = 'Stop'
+foreach ($extension in @('.COM','.EXE','.BAT','.CMD')) {
+    if ($env:PATHEXT.Split(';') -notcontains $extension) { $env:PATHEXT += ';' + $extension }
+}
+try {
+    $c = Get-Content (Join-Path $PSScriptRoot 'refresh.json') -Raw | ConvertFrom-Json
+    & $c.node $c.setup --gateway $c.gateway --id $c.id --name $c.name --codex-home $c.codex_home --state $c.state --syncthing $c.syncthing --tailscale $c.tailscale --refresh true *> (Join-Path $PSScriptRoot 'refresh.log')
+    exit $LASTEXITCODE
+} catch { exit 1 }
+'@ | Set-Content $refreshRunner -Encoding UTF8
+$refreshAction = New-ScheduledTaskAction -Execute "$env:SystemRoot\System32\WindowsPowerShell\v1.0\powershell.exe" -Argument ('-NoProfile -NonInteractive -WindowStyle Hidden -ExecutionPolicy Bypass -File "' + $refreshRunner + '"')
+$refreshTrigger = New-ScheduledTaskTrigger -Once -At ((Get-Date).AddMinutes(1)) -RepetitionInterval (New-TimeSpan -Minutes 1)
+$refreshSettings = New-ScheduledTaskSettingsSet -ExecutionTimeLimit (New-TimeSpan -Minutes 5) -StartWhenAvailable -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -MultipleInstances IgnoreNew
+Register-ScheduledTask -TaskName 'AgentNode-CodexSharesRefresh' -Action $refreshAction -Trigger $refreshTrigger -Principal $principal -Settings $refreshSettings -Force | Out-Null
+Write-Host 'Device registered. Memory and optional Skill shares use the same Syncthing instance.'

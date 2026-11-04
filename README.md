@@ -27,7 +27,7 @@ Ubuntu/Debian（含 systemd WSL）使用同一个下载入口，无需 GitHub �
 
 已有节点再次运行同一条命令并选择相同角色即可更新。认证、密钥、会话及网络配置保留；完整更新会重启所选角色相关服务，网关切换静态版本并 reload Nginx。`--toolkit-only` 只替换部署工具包，不安装依赖、构建 UI 或重启服务。
 
-安装包内置已提交源码，保留上游许可证，不包含节点 URI、登录文件、后端密钥或私有网关配置。源码版本：`bbd37dd338f97ec2bca1666354160ee837f107cf`。
+安装包内置已提交源码，保留上游许可证，不包含节点 URI、登录文件、后端密钥或私有网关配置。源码版本：`719a5d9119505ef9876350d1eb2a71376473bb66`。
 
 校验：将 `install.sh` 与 `install.sh.sha256` 放在同一目录，运行 `sha256sum -c install.sh.sha256`。
 
@@ -70,3 +70,5 @@ Remove-Item $script
 在网关“仅共享记忆的设备”列表启用该来源。Windows 登录时自动运行 `AgentNode-CodexMemory` 计划任务；设备只发送自己的记忆，VPS 将文件保存到 `$CODEX_HOME/peer_memories/desktop/memories_v2/`。设备证书和状态位于 Codex 主目录同级 `.agent-node-memory-device`，不包含在安装包中。暂停与移除都从网关管理页操作。
 
 统一机密：网关“设置 → 机密”进入共享管理页，一次录入后自动分发所有已连接后端，每分钟检查重试；新后端接入后自动补齐。支持修改、删除同步及逐台状态。网关使用独立加密存储，保留各后端其他私有机密，不改动上游 Canvas 源码。网关完整更新会自动安装依赖、启用后台同步；仅更新工具包仍不重启服务。
+
+Skill 副本共享：复用现有 Syncthing，按来源保存到 ~/.agents/peer_skills，不自动加载或启用。全局 AGENTS 仅在现有能力不足或用户明确要求时引导检索。后端运行 openhands memory-sync 应用；Windows 已有记忆设备可重跑安装器并加 -SkillsRoot "\\wsl.localhost\Ubuntu\home\user\.agents\skills"，原实例同时共享记忆和 Skill。每分钟短任务刷新导出和授权，不另装 WSL Syncthing；WSL UNC 接收目录使用定期扫描。

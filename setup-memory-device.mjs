@@ -6,6 +6,7 @@ import dns from "node:dns";
 import https from "node:https";
 import http from "node:http";
 import { execFileSync, spawn } from "node:child_process";
+import { publishSkills, updateSkillInstructions, writePeerIndex } from './skills.mjs';
 const flags = Object.fromEntries(
   process.argv.slice(2).reduce((a, v, i, xs) => {
     if (v.startsWith("--")) a.push([v.slice(2), xs[i + 1]]);
@@ -45,6 +46,13 @@ const state = path.resolve(
     path.join(os.homedir(), ".local/share/agent-node-memory-device"),
 );
 fs.mkdirSync(state, { recursive: true, mode: 0o700 });
+const metadataPath = path.join(state, 'device.json');
+const savedSettings = fs.existsSync(metadataPath) ? JSON.parse(fs.readFileSync(metadataPath, 'utf8')) : {};
+const skillsRoot = flags['skills-root'] || savedSettings.skills_root;
+const peerSkills = flags['peer-skills'] || savedSettings.peer_skills || (skillsRoot ? path.join(path.dirname(skillsRoot), 'peer_skills') : null);
+const instructionPeerSkills = flags['peer-skills-instructions'] || savedSettings.peer_skills_instructions || (peerSkills?.replace(/^\\\\wsl(?:\.localhost|\$)\\[^\\]+\\/i, '/').replaceAll('\\', '/'));
+if (savedSettings.skills_root && skillsRoot !== savedSettings.skills_root) throw Error('Skill source already configured; explicit migration required');
+if (skillsRoot && (!path.isAbsolute(skillsRoot) || !path.isAbsolute(peerSkills) || !fs.statSync(skillsRoot).isDirectory())) throw Error('Expected existing Skill source and absolute peer path');
 const binary = flags.syncthing || "syncthing";
 const ts = flags.tailscale || "tailscale";
 const ip = execFileSync(ts, ["ip", "-4"], {
@@ -128,6 +136,7 @@ if (running) {
   )
     throw Error("Dedicated administration port belongs to another instance");
 } else {
+  if (flags.refresh) throw Error('Syncthing is not running; waiting for its existing startup task');
   xml = xml.replace(
     /(<gui\b[^>]*>)([\s\S]*?)(<\/gui>)/,
     (_, start, body, end) =>
@@ -204,13 +213,13 @@ if (running) {
   if (!running)
     throw Error("Dedicated Syncthing did not start; inspect the local log");
 }
-const gateway = (method = "GET", value, csrf) =>
+const gateway = (method = "GET", value, csrf, endpoint = '/gateway/api/backends') =>
   new Promise((resolve, reject) => {
     const headers = { "Content-Type": "application/json" };
     if (csrf)
       Object.assign(headers, { Origin: origin.origin, "X-Gateway-CSRF": csrf });
     const req = https.request(
-      new URL("/gateway/api/backends", origin),
+      new URL(endpoint, origin),
       {
         method,
         headers,
@@ -258,9 +267,10 @@ const reply = await gateway(
   {
     action: "memory-device-add",
     id: ident,
-    name: flags.name || os.hostname(),
+    name: flags.name || savedSettings.name || os.hostname(),
     device_id: self.myID,
     address: "tcp://" + ip + ":22001",
+    ...(skillsRoot ? {skills: true} : {}),
   },
   catalog.csrf,
 );
@@ -326,6 +336,28 @@ else if (fs.readFileSync(ignore, "utf8") !== ignoreText) {
   }
 }
 config.folders = [folder];
+if (skillsRoot) {
+  const topology = await gateway('GET', undefined, undefined, '/gateway/api/skills/topology');
+  const own = topology.nodes.find(n => n.id === ident && n.device_id === self.myID);
+  const exportRoot = path.join(state, 'skills-export');
+  publishSkills({agents:skillsRoot}, exportRoot);
+  const authorized = own?.receive_skills ? topology.nodes.filter(n => n.skills && n.id !== ident) : [];
+  for (const node of [{id:ident}, ...authorized]) {
+    if (!/^[a-z][a-z0-9-]{0,31}$/.test(node.id)) throw Error('Invalid Skill source ID');
+    const sourceOwner = node.id === ident;
+    const root = sourceOwner ? exportRoot : path.join(peerSkills, node.id);
+    if (fs.existsSync(root) && fs.lstatSync(root).isSymbolicLink()) throw Error('Refusing symlinked peer Skill directory');
+    fs.mkdirSync(root, {recursive:true});
+    const item = await api('config/defaults/folder');
+    Object.assign(item, {id:'codex-skills-'+node.id,label:'Peer skills: '+node.id,path:root,
+      type:sourceOwner?'sendonly':'receiveonly',devices:[{deviceID:self.myID},{deviceID:hub.device_id}],
+      rescanIntervalS:60,fsWatcherEnabled:!root.startsWith('\\\\'),fsWatcherDelayS:2,ignorePerms:true,paused:false});
+    if (!sourceOwner) item.versioning={type:'simple',params:{keep:'3'},cleanupIntervalS:3600};
+    config.folders.push(item);
+  }
+  updateSkillInstructions(base, peerSkills, instructionPeerSkills);
+  writePeerIndex(peerSkills, authorized, ident);
+}
 Object.assign(config.options, {
   globalAnnounceEnabled: false,
   localAnnounceEnabled: false,
@@ -342,11 +374,13 @@ fs.writeFileSync(
     {
       gateway: origin.origin,
       id: ident,
+      name: flags.name || savedSettings.name || os.hostname(),
       source,
       state,
       syncthing: binary,
       device_id: self.myID,
       address: "tcp://" + ip + ":22001",
+      ...(skillsRoot ? {skills_root:skillsRoot,peer_skills:peerSkills,peer_skills_instructions:instructionPeerSkills} : {}),
     },
     null,
     2,
