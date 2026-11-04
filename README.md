@@ -26,7 +26,7 @@ Ubuntu/Debian（含 systemd WSL）使用同一个下载入口，无需 GitHub �
 
 已有节点再次运行同一条命令并选择相同角色即可更新。认证、密钥、会话及网络配置保留；完整更新会重启所选角色相关服务，网关切换静态版本并 reload Nginx。`--toolkit-only` 只替换部署工具包，不安装依赖、构建 UI 或重启服务。
 
-安装包内置已提交源码，保留上游许可证，不包含节点 URI、登录文件、后端密钥或私有网关配置。源码版本：`1f24292a72a4d01be8c58c3d6ca048f2cede37d8`。
+安装包内置已提交源码，保留上游许可证，不包含节点 URI、登录文件、后端密钥或私有网关配置。源码版本：`aedfaaf5b07c392e5948dc7f0bfc4990bb148ffe`。
 
 校验：将 `install.sh` 与 `install.sh.sha256` 放在同一目录，运行 `sha256sum -c install.sh.sha256`。
 
@@ -49,3 +49,5 @@ Ubuntu/Debian（含 systemd WSL）使用同一个下载入口，无需 GitHub �
 当前新增：纯 Skill 快捷调用能正确结束发送确认；会话运行和连接状态常驻显示，手机可见。Syncthing 在各 VPS 间共享独立记忆副本，网关收集所有来源，每个后端只接收其他来源。网关安装自动准备服务；在管理后端页面点击“记忆共享”，在对应后端运行 `openhands memory-sync` 配对一次。之后共享名单自动刷新，部署更新保留配对。`openhands memory-sync-status` 查看同步状态。
 
 当前新增：左下角显示所选后端的 CPU 核数及使用率、内存已用/总量及占比，页面可见时每 10 秒刷新。已有节点先运行 `openhands toolkit-update`，任务空闲时运行 `bash /opt/agent-node/linux/canvas/resources-update.sh --restart`；网关需更新 UI。
+
+界面调整：会话运行状态收进输入框底部工具栏；模型和推理力度分别选择，手机窄屏的“更多输入操作”也提供两个独立入口。已有网关通过同一安装命令选择网关角色更新，后端无需为这次界面调整重启。
