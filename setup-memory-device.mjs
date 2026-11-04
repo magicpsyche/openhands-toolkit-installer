@@ -101,6 +101,7 @@ const api = (endpoint, method = "GET", value) =>
       "http://" + gui + "/rest/" + endpoint,
       {
         method,
+        agent: false, // Exporting WSL files can outlive the REST server's idle timeout.
         headers: { "X-API-Key": apiKey, "Content-Type": "application/json" },
         timeout: 15000,
       },
@@ -119,7 +120,7 @@ const api = (endpoint, method = "GET", value) =>
       },
     );
     req.on("timeout", () => req.destroy(Error("Syncthing request timed out")));
-    req.on("error", reject);
+    req.on("error", error => reject(Error('Syncthing '+endpoint+': '+(error.code || 'connection failed'))));
     req.end(value ? JSON.stringify(value) : undefined);
   });
 let running = false;
@@ -222,6 +223,7 @@ const gateway = (method = "GET", value, csrf, endpoint = '/gateway/api/backends'
       new URL(endpoint, origin),
       {
         method,
+        agent: false,
         headers,
         timeout: 30000,
         autoSelectFamily: false,
@@ -254,7 +256,7 @@ const gateway = (method = "GET", value, csrf, endpoint = '/gateway/api/backends'
       },
     );
     req.on("timeout", () => req.destroy(Error("Gateway request timed out")));
-    req.on("error", reject);
+    req.on("error", error => reject(Error('Gateway '+endpoint+': '+(error.code || 'connection failed'))));
     req.end(value ? JSON.stringify(value) : undefined);
   });
 const catalog = await gateway();
@@ -351,7 +353,7 @@ if (skillsRoot) {
     const item = await api('config/defaults/folder');
     Object.assign(item, {id:'codex-skills-'+node.id,label:'Peer skills: '+node.id,path:root,
       type:sourceOwner?'sendonly':'receiveonly',devices:[{deviceID:self.myID},{deviceID:hub.device_id}],
-      rescanIntervalS:60,fsWatcherEnabled:!root.startsWith('\\\\'),fsWatcherDelayS:2,ignorePerms:true,paused:false});
+      rescanIntervalS:60,fsWatcherEnabled:!root.startsWith('\\\\'),fsWatcherDelayS:2,ignorePerms:true,paused:false,order:'smallestFirst'});
     if (!sourceOwner) item.versioning={type:'simple',params:{keep:'3'},cleanupIntervalS:3600};
     config.folders.push(item);
   }
