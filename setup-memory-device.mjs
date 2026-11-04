@@ -273,6 +273,7 @@ const reply = await gateway(
     device_id: self.myID,
     address: "tcp://" + ip + ":22001",
     ...(skillsRoot ? {skills: true} : {}),
+    ...(flags['migrate-from'] ? {migrate_from:flags['migrate-from']} : {}),
   },
   catalog.csrf,
 );
