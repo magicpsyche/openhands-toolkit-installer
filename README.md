@@ -15,6 +15,7 @@ Ubuntu/Debian（含 systemd WSL）使用同一个下载入口，无需 GitHub �
 1. **后端**：VPS 完整 root 登录终端，安装到 `/opt/agent-node`。可选 Xray 分流及 Tailscale。VLESS 由用户隐藏输入，原生订阅登录由用户手动执行。安装后显示后端地址和 API Key。
 2. **本地控制端**：Linux / WSL 普通用户，安装到 `~/.local/share/agent-node/toolkit`，本机访问 `http://localhost:8000`。
 3. **VPS 控制端＋统一网关**：专用 VPS 的完整 root 登录终端，安装到 `/opt/agent-node-gateway`。加入现有 Tailscale 网络，配置允许访问的账号与后端连接信息。手机连接 Tailscale 后打开输出的 HTTPS 地址，选择不同后端操作；不依赖本地电脑开机。
+4. **仅共享记忆的设备**：Linux 安装时选择第 4 项或传入 `--memory-device --gateway-url https://你的网关`。独立的 Syncthing 只发送本机 memories_v2，由网关转发给已连接的后端。
 
 自动化使用 `--server`、`--control`、`--gateway`。网关支持 `--config /private/config.json`，也可用 `--build /verified/build` 导入已验证前端；不提供 build 时从固定基线构建。私有配置必须为 0600，网关默认保存在 `/etc/agent-node-gateway/config.json`。
 
@@ -26,7 +27,7 @@ Ubuntu/Debian（含 systemd WSL）使用同一个下载入口，无需 GitHub �
 
 已有节点再次运行同一条命令并选择相同角色即可更新。认证、密钥、会话及网络配置保留；完整更新会重启所选角色相关服务，网关切换静态版本并 reload Nginx。`--toolkit-only` 只替换部署工具包，不安装依赖、构建 UI 或重启服务。
 
-安装包内置已提交源码，保留上游许可证，不包含节点 URI、登录文件、后端密钥或私有网关配置。源码版本：`d0babaf8b4e1c54be858182fba423dcc2e6f26c7`。
+安装包内置已提交源码，保留上游许可证，不包含节点 URI、登录文件、后端密钥或私有网关配置。源码版本：`ac5a1e91afae194d964d33afbda7035407470866`。
 
 校验：将 `install.sh` 与 `install.sh.sha256` 放在同一目录，运行 `sha256sum -c install.sh.sha256`。
 
@@ -55,3 +56,15 @@ Ubuntu/Debian（含 systemd WSL）使用同一个下载入口，无需 GitHub �
 Codex ACP 会话的“压缩上下文”按钮调用当前线程的原生 `/compact`，收到完成事件后显示结果。
 
 左下角状态修复：网关托管后端连续探测失败后，控制端仍会定期验证。验证成功后自动清除旧离线标记。
+
+
+Windows 只共享记忆时，在 PowerShell 运行下面的独立入口。需要已登录的 Tailscale 和 Node.js 18+，记忆目录替换为本机实际路径：
+
+```powershell
+$script = Join-Path $env:TEMP ([IO.Path]::GetRandomFileName() + '.ps1')
+Invoke-WebRequest https://raw.githubusercontent.com/magicpsyche/openhands-toolkit-installer/main/install-memory-device.ps1 -OutFile $script
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File $script -Gateway https://op.example.com -Id desktop -CodexHome 'D:\Users\yourname\.codex'
+Remove-Item $script
+```
+
+在网关“仅共享记忆的设备”列表启用该来源。Windows 登录时自动运行 `AgentNode-CodexMemory` 计划任务；设备只发送自己的记忆，VPS 将文件保存到 `$CODEX_HOME/peer_memories/desktop/memories_v2/`。设备证书和状态位于 Codex 主目录同级 `.agent-node-memory-device`，不包含在安装包中。暂停与移除都从网关管理页操作。
