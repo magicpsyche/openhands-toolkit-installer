@@ -56,6 +56,6 @@ Remove-Item $script
 
 ## 安装包校验
 
-安装包只含已提交源码与上游许可证，无需克隆仓库。源码版本：`3942d301a46b4c2cfad5438f69beb306cc5250f8`。
+安装包只含已提交源码与上游许可证，无需克隆仓库。源码版本：`a9bfcbdea04e2aaabba5eddf006304fe7fcc69a2`。
 
 将 `install.sh` 与 `install.sh.sha256` 放在同一目录，运行 `sha256sum -c install.sh.sha256`。
