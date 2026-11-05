@@ -27,7 +27,7 @@ Ubuntu/Debian（含 systemd WSL）使用同一个下载入口，无需 GitHub �
 
 已有节点再次运行同一条命令并选择相同角色即可更新。认证、密钥、会话及网络配置保留；完整更新会重启所选角色相关服务，网关切换静态版本并 reload Nginx。`--toolkit-only` 只替换部署工具包，不安装依赖、构建 UI 或重启服务。
 
-安装包内置已提交源码，保留上游许可证，不包含节点 URI、登录文件、后端密钥或私有网关配置。源码版本：`1b4b5213409cd118537bfa88cfc87f604bf9c536`。
+安装包内置已提交源码，保留上游许可证，不包含节点 URI、登录文件、后端密钥或私有网关配置。源码版本：`d6ace145938e388a5898a65d13055cd9cd257af6`。
 
 校验：将 `install.sh` 与 `install.sh.sha256` 放在同一目录，运行 `sha256sum -c install.sh.sha256`。
 
@@ -85,3 +85,5 @@ bash install.sh --memory-device --gateway-url https://你的网关 --id desktop 
 从旧 Windows 实例迁到 WSL：先停止旧实例，私下备份 cert.pem、key.pem、device.json；安装时显式传 `--identity-dir /私有备份目录 --migrate-from tcp://旧Tailscale地址:22001`，保留设备身份和网关授权，仅更新地址，不迁移旧路径和数据库。验证后删除旧 Windows 同步任务及专用安装目录；不会迁移 Codex 的认证、配置、历史数据库。详见源码 docs/memory-sync.md。
 
 私人网关的鉴权服务扩大并发连接等待队列，避免 HTTP/2 首次并行加载大量资源时出现连接排队、丢弃和长时间空白。原有身份验证规则保持不变。
+
+网关管理弹窗使用“后端管理 / 统一机密”页签，切换保留未保存表单；使用右上角关闭返回会话。
